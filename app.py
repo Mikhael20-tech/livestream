@@ -21,6 +21,17 @@ app = Flask(__name__)
 ENGINE_LOCK = threading.Lock()
 WATCHERS = []
 IS_ENGINE_RUNNING = False
+TG_LISTENER = None
+
+def start_telegram_listener():
+    global TG_LISTENER
+    try:
+        from telegram_bot import TelegramListener
+        if TG_LISTENER is None or not TG_LISTENER.is_alive():
+            TG_LISTENER = TelegramListener()
+            TG_LISTENER.start()
+    except Exception as e:
+        logger.error(f"Gagal memulai Telegram Listener: {e}")
 
 
 def start_engine_background():
@@ -48,6 +59,7 @@ def start_engine_background():
             WATCHERS.append(w)
 
         IS_ENGINE_RUNNING = True
+        start_telegram_listener()
         return True
 
 

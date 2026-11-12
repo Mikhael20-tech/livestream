@@ -7,6 +7,11 @@
     "folder_id": "1jv4Di6t7ceemzIljL641y5zSKD9oNq03",
     "delete_local_after_upload": true
   },
+  "telegram": {
+    "enabled": true,
+    "bot_token": "9192225378:AAHCulXHiNSTlotWyqh-sjjWzeILfY_q_rs",
+    "chat_id": "7987566473"
+  },
   "targets": [
     {
       "platform": "tiktok",

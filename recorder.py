@@ -87,6 +87,12 @@ def upload_to_gdrive(local_file_path: str, gdrive_cfg: dict):
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
             logger.info("🎉 Sukses ter-upload ke Google Drive!")
+            try:
+                from telegram_bot import send_telegram_msg
+                filename = os.path.basename(local_file_path)
+                send_telegram_msg(f"🎉 *VIDEO SUKSES KE GOOGLE DRIVE!*\n📁 File: `{filename}`\n[Klik untuk Buka Folder Rekaman](https://drive.google.com/drive/folders/1jv4Di6t7ceemzIljL641y5zSKD9oNq03)")
+            except Exception:
+                pass
             if delete_local:
                 logger.info("🗑️ File lokal di VPS telah dihapus agar disk tetap lega.")
         else:
@@ -140,6 +146,12 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
     ACTIVE_STATUS[status_key] = True
     logger.info(f"🔴 [{platform.upper()} - {target}] LIVE TERDETEKSI! Memulai rekaman...")
     logger.info(f"📁 Menyimpan ke: {output_path}")
+
+    try:
+        from telegram_bot import send_telegram_msg
+        send_telegram_msg(f"🔴 *LIVE TERDETEKSI!*\nTarget: *{target}* ({platform.upper()})\nBot sedang merekam otomatis...")
+    except Exception:
+        pass
 
     # Metode 1: Streamlink
     cmd = [

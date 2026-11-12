@@ -667,11 +667,15 @@ def api_target_delete():
 
 
 if __name__ == "__main__":
-    # Start bot automatically on launch if desired
     start_engine_background()
+    port = int(os.environ.get("PORT", 80))
     print("=" * 60)
     print("  🌐 Auto Live Stream Recorder Web UI Berjalan!")
-    print("  👉 Akses di Browser: http://localhost:5000")
-    print("  👉 Atau jika di VPS: http://IP_VPS:5000")
+    print(f"  👉 Akses di Browser: http://localhost:{port}")
+    print(f"  👉 Atau jika di VPS: http://IP_VPS (Port {port})")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    try:
+        app.run(host="0.0.0.0", port=port, debug=False)
+    except PermissionError:
+        print("Port 80 membutuhkan sudo/root, mencoba port 5000...")
+        app.run(host="0.0.0.0", port=5000, debug=False)

@@ -671,6 +671,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print("=" * 60)
     print("  🌐 Auto Live Stream Recorder Web UI Berjalan!")
-    print(f"  👉 Akses di Localhost: http://localhost:{port}")
+    print(f"  👉 Akses di Browser: http://72.60.79.72:{port}")
     print("=" * 60)
-    app.run(host="127.0.0.1", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)

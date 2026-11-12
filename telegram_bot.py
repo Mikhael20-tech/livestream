@@ -180,3 +180,4 @@ class TelegramListener(threading.Thread):
                 "☁️ *Google Drive Rekaman:*\n"
                 "[Klik di sini untuk membuka Folder Rekaman](https://drive.google.com/drive/folders/1jv4Di6t7ceemzIljL641y5zSKD9oNq03)"
             )
+

@@ -103,15 +103,72 @@ def upload_to_gdrive(local_file_path: str, gdrive_cfg: dict):
         logger.error(f"⚠️ Error saat upload Rclone: {e}")
 
 
-def is_live_active(url: str) -> bool:
+def check_tiktok_live(username: str, sessionid: str = "") -> tuple[bool, str]:
+    """
+    Cek live TikTok langsung via API resmi dengan sessionid cookie.
+    Tahan anti-bot WAF dan mampu menembus live 18+ / mature restriction.
+    Mengembalikan: (is_live: bool, stream_or_page_url: str)
+    """
+    clean_user = username.strip().lstrip("@")
+    page_url = f"https://www.tiktok.com/@{clean_user}/live"
+
+    try:
+        from curl_cffi import requests
+        cookies = {"sessionid": sessionid} if sessionid else {}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+            "Referer": "https://www.tiktok.com/"
+        }
+        api_url = f"https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId={clean_user}"
+        r = requests.get(api_url, cookies=cookies, headers=headers, impersonate="chrome124", timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            room_data = data.get("data", {})
+            user_info = room_data.get("user", {})
+            live_room = room_data.get("liveRoom", {})
+            room_id = user_info.get("roomId") or live_room.get("roomId")
+
+            # Jika liveRoom status == 2 (Living) atau ada room_id
+            if room_id:
+                # Verifikasi via webcast check_alive
+                check_url = f"https://webcast.tiktok.com/webcast/room/check_alive/?aid=1988&room_ids={room_id}"
+                r_check = requests.get(check_url, cookies=cookies, headers=headers, impersonate="chrome124", timeout=6)
+                if r_check.status_code == 200:
+                    check_data = r_check.json()
+                    alive_list = check_data.get("data", [])
+                    if alive_list and alive_list[0].get("alive"):
+                        return True, page_url
+
+            # Cek status langsung
+            if live_room.get("status") == 2:
+                return True, page_url
+    except Exception as e:
+        logger.debug(f"TikTok API check error for {clean_user}: {e}")
+
+    return False, page_url
+
+
+def is_live_active(url: str, platform: str = "", target: str = "") -> bool:
     """
     Cek apakah target sedang live.
-    Coba streamlink dulu, jika gagal coba yt-dlp.
+    Gunakan TikTok API untuk TikTok, atau streamlink & yt-dlp untuk platform lain.
     """
+    cfg = load_config()
+    sessionid = cfg.get("tiktok_sessionid", "")
+
+    if platform.lower() == "tiktok" or "tiktok.com" in url:
+        username = target if target else url.split("@")[-1].split("/")[0]
+        active, _ = check_tiktok_live(username, sessionid)
+        if active:
+            return True
+
+    # Cek via streamlink dengan cookie sessionid jika ada
     try:
         import streamlink
         session = streamlink.Streamlink()
-        # Nonaktifkan prompt interaktif
+        if sessionid and ("tiktok.com" in url or platform.lower() == "tiktok"):
+            session.set_option("http-cookies", f"sessionid={sessionid}")
+            session.set_option("http-headers", "Referer=https://www.tiktok.com/")
         streams = session.streams(url)
         if streams:
             return True
@@ -154,12 +211,24 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
         pass
 
     # Metode 1: Streamlink
+    cfg = load_config()
+    sessionid = cfg.get("tiktok_sessionid", "")
+
+    extra_args = []
+    if sessionid and (platform.lower() == "tiktok" or "tiktok.com" in url):
+        extra_args.extend([
+            "--http-cookie", f"sessionid={sessionid}",
+            "--http-header", "Referer=https://www.tiktok.com/",
+            "--http-header", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+        ])
+
     cmd = [
         sys.executable, "-m", "streamlink",
         "--default-stream", "best",
         "--retry-streams", "5",
         "--retry-max", "5",
-        "--stream-segment-threads", "2",
+        "--stream-segment-threads", "2"
+    ] + extra_args + [
         "--output", output_path,
         url,
         "best"
@@ -259,7 +328,7 @@ class TargetWatcher(threading.Thread):
         
         while not self.stop_event.is_set():
             try:
-                active = is_live_active(self.url)
+                active = is_live_active(self.url, self.platform, self.target)
                 if active:
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     safe_target = sanitize_filename(self.target.lstrip("@"))

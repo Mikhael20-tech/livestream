@@ -1,0 +1,18 @@
+{
+  "check_interval_seconds": 30,
+  "output_directory": "recordings",
+  "google_drive_rclone": {
+    "enabled": true,
+    "rclone_remote": "gdrive",
+    "folder_id": "1jv4Di6t7ceemzIljL641y5zSKD9oNq03",
+    "delete_local_after_upload": true
+  },
+  "targets": [
+    {
+      "platform": "tiktok",
+      "username": "tiktok",
+      "enabled": true
+    }
+  ]
+}
+

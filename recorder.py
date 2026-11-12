@@ -74,20 +74,13 @@ def get_stream_url(platform: str, identifier: str) -> str:
 def upload_to_gdrive(local_file_path: str, gdrive_cfg: dict):
     """Mengunggah video ke Google Drive menggunakan Rclone dan menghapus lokal jika diminta."""
     remote = gdrive_cfg.get("rclone_remote", "gdrive")
-    folder_id = gdrive_cfg.get("folder_id")
-    rclone_folder = gdrive_cfg.get("rclone_folder", "TikTokRec").strip("/")
+    rclone_folder = gdrive_cfg.get("rclone_folder", "Rekaman").strip("/")
     delete_local = gdrive_cfg.get("delete_local_after_upload", True)
 
     action = "move" if delete_local else "copy"
-
-    if folder_id:
-        destination = f"{remote}:"
-        cmd = ["rclone", action, local_file_path, destination, "--drive-root-folder-id", folder_id, "--progress"]
-        logger.info(f"☁️ Mengunggah langsung ke Google Drive Folder ID: {folder_id}...")
-    else:
-        destination = f"{remote}:{rclone_folder}/"
-        cmd = ["rclone", action, local_file_path, destination, "--progress"]
-        logger.info(f"☁️ Mengunggah ke Google Drive: {destination}...")
+    destination = f"{remote}:{rclone_folder}/"
+    cmd = ["rclone", action, local_file_path, destination, "--progress"]
+    logger.info(f"☁️ Mengunggah ke Google Drive: {destination}...")
 
     try:
         cmd = ["rclone", action, local_file_path, destination, "--progress"]
@@ -173,7 +166,14 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
         while True:
             if stop_event and stop_event.is_set():
                 logger.info(f"Menghentikan rekaman [{target}] karena diminta stop...")
-                process.terminate()
+                try:
+                    process.terminate()
+                    process.wait(timeout=4)
+                except Exception:
+                    try:
+                        process.kill()
+                    except Exception:
+                        pass
                 break
 
             retcode = process.poll()
@@ -187,6 +187,11 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
                     logger.debug(f"[{target}] {line_str}")
             else:
                 time.sleep(0.5)
+
+        try:
+            process.wait(timeout=3)
+        except Exception:
+            pass
 
         logger.info(f"⏹️ [{platform.upper()} - {target}] Rekaman selesai (Live berakhir).")
         ACTIVE_STATUS[status_key] = False

@@ -1,6 +1,9 @@
 {
   "check_interval_seconds": 30,
   "output_directory": "recordings",
+  "segment_minutes": 60,
+  "storage_alert_threshold_percent": 15,
+  "default_quality": "hd",
   "google_drive_rclone": {
     "enabled": true,
     "rclone_remote": "gdrive",
@@ -17,6 +20,7 @@
     {
       "platform": "tiktok",
       "username": "rrenerren29",
+      "quality": "hd",
       "enabled": true
     }
   ]

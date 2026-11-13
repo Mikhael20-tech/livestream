@@ -21,7 +21,7 @@ def banner():
     print("""
 =============================================================
            🔴 AUTO LIVE STREAM RECORDER BOT 🔴              
-   Mendukung: TikTok, YouTube, Twitch, Kick, & Custom URLs   
+   Mendukung: TikTok, Band.us, YouTube, Twitch, Kick, & URLs 
 =============================================================
 """)
 
@@ -50,7 +50,8 @@ def start_auto_recorder():
             platform=t.get("platform", "tiktok"),
             target=t.get("username"),
             output_dir=output_dir,
-            check_interval=interval
+            check_interval=interval,
+            quality=t.get("quality", "hd")
         )
         w.start()
         watchers.append(w)

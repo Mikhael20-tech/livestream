@@ -107,33 +107,35 @@ def check_tiktok_live(username: str, sessionid: str = "") -> tuple[bool, str]:
     """
     Cek live TikTok langsung via API resmi dengan sessionid cookie.
     Tahan anti-bot WAF dan mampu menembus live 18+ / mature restriction.
+    Menggunakan urllib bawaan Python (tanpa dependency tambahan) + fallback curl_cffi.
     Mengembalikan: (is_live: bool, direct_stream_url: str)
     """
+    import urllib.request
     clean_user = username.strip().lstrip("@")
     page_url = f"https://www.tiktok.com/@{clean_user}/live"
+    api_url = f"https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId={clean_user}"
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Referer": "https://www.tiktok.com/",
+        "Accept": "application/json, text/plain, */*"
+    }
+    if sessionid:
+        headers["Cookie"] = f"sessionid={sessionid}"
+
+    # Metode 1: urllib bawaan Python (Sangat stabil & zero-dependency)
     try:
-        from curl_cffi import requests
-        cookies = {"sessionid": sessionid} if sessionid else {}
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-            "Referer": "https://www.tiktok.com/"
-        }
-        api_url = f"https://www.tiktok.com/api-live/user/room/?aid=1988&sourceType=54&uniqueId={clean_user}"
-        r = requests.get(api_url, cookies=cookies, headers=headers, impersonate="chrome124", timeout=10)
-        if r.status_code == 200:
-            data = r.json()
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="ignore"))
             room_data = data.get("data", {})
             user_info = room_data.get("user", {})
             live_room = room_data.get("liveRoom", {})
             room_id = user_info.get("roomId") or live_room.get("roomId")
-
             status = live_room.get("status")
-            stream_data_obj = live_room.get("streamData", {})
-            pull_data = stream_data_obj.get("pull_data", {})
-            raw_sd = pull_data.get("stream_data")
 
             stream_url = ""
+            raw_sd = live_room.get("streamData", {}).get("pull_data", {}).get("stream_data")
             if raw_sd:
                 try:
                     sd_json = json.loads(raw_sd)
@@ -153,21 +155,30 @@ def check_tiktok_live(username: str, sessionid: str = "") -> tuple[bool, str]:
                 except Exception:
                     pass
 
-            # Jika liveRoom status == 2 (Living) atau ada stream_url
+            # Status 2 = Sedang Live Aktif
             if status == 2:
+                title = live_room.get("title", "")
+                logger.info(f"✨ TikTok API: @{clean_user} terdeteksi AKTIF LIVE! Judul: '{title}'")
                 return True, stream_url or page_url
-
-            # Jika status bukan 4 (selesai) dan punya room_id, verifikasi via check_alive
-            if room_id and status != 4:
-                check_url = f"https://webcast.tiktok.com/webcast/room/check_alive/?aid=1988&room_ids={room_id}"
-                r_check = requests.get(check_url, cookies=cookies, headers=headers, impersonate="chrome124", timeout=6)
-                if r_check.status_code == 200:
-                    check_data = r_check.json()
-                    alive_list = check_data.get("data", [])
-                    if alive_list and alive_list[0].get("alive"):
-                        return True, stream_url or page_url
+            elif status == 4:
+                return False, ""
     except Exception as e:
-        logger.debug(f"TikTok API check error for {clean_user}: {e}")
+        logger.debug(f"urllib TikTok check error: {e}")
+
+    # Metode 2: curl_cffi jika tersedia
+    try:
+        from curl_cffi import requests
+        cookies = {"sessionid": sessionid} if sessionid else {}
+        r = requests.get(api_url, cookies=cookies, headers=headers, impersonate="chrome124", timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            room_data = data.get("data", {})
+            live_room = room_data.get("liveRoom", {})
+            status = live_room.get("status")
+            if status == 2:
+                return True, page_url
+    except Exception:
+        pass
 
     return False, ""
 

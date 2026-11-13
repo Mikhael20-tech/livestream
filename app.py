@@ -1,5 +1,6 @@
 """
-Flask Web Dashboard untuk Auto Live Stream Recorder v2.1
+Flask Web Dashboard untuk Auto Live Stream Recorder v2.2 Pro
+Desain Modern, Responsif, Custom Dropdown & Video Stream Player
 """
 
 import os
@@ -91,11 +92,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LiveStream Auto Recorder Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LiveStream Auto Recorder Pro</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS & FontAwesome -->
   <script>
-    // Sembunyikan notifikasi production Tailwind di console
     const _origWarn = console.warn;
     console.warn = function(...args) {
       if (args[0] && typeof args[0] === 'string' && args[0].includes('tailwindcss.com should not be used in production')) return;
@@ -104,11 +111,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
           colors: {
             brand: {
               50: '#fff1f2',
@@ -122,236 +134,229 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
   </script>
   <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #18181b; }
-    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #52525b; }
     .pulse-dot { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+    .glass-card { background: rgba(24, 24, 27, 0.65); backdrop-filter: blur(16px); }
+    .glass-nav { background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(20px); }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased pb-16">
+<body class="bg-[#09090b] text-zinc-100 min-h-screen font-sans antialiased selection:bg-rose-500 selection:text-white pb-20">
 
-  <!-- Top Navigation -->
-  <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-900/30">
-          <i class="fa-solid fa-video text-white text-lg"></i>
+  <!-- Glow Accents in Background -->
+  <div class="fixed top-0 left-1/4 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+  <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+  <!-- Top Sticky Navigation -->
+  <header class="border-b border-zinc-800/80 glass-nav sticky top-0 z-40 transition-all duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-900/40 shrink-0">
+          <i class="fa-solid fa-video text-white text-base sm:text-lg"></i>
         </div>
         <div>
-          <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
-            Auto Live Recorder
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-semibold">v2.1 Pro</span>
-          </h1>
-          <p class="text-xs text-zinc-400">TikTok, Band.us, YouTube, Twitch, Kick</p>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white leading-none">Auto Recorder</h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30 uppercase tracking-wider">v2.2 Pro</span>
+          </div>
+          <p class="text-[11px] sm:text-xs text-zinc-400 font-medium mt-1 truncate max-w-[200px] sm:max-w-none">Multi-Platform Cloud 24/7 Engine</p>
         </div>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="flex items-center space-x-3">
-        <a href="https://drive.google.com/drive/folders/{{ gdrive_folder_id }}" target="_blank" class="text-xs px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 flex items-center gap-2 transition">
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <a href="https://drive.google.com/drive/folders/{{ gdrive_folder_id }}" target="_blank" class="text-xs font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 flex items-center gap-2 transition shadow-sm hover:border-zinc-700">
           <i class="fa-brands fa-google-drive text-amber-400 text-sm"></i>
-          <span class="hidden sm:inline">Google Drive</span>
+          <span class="hidden md:inline">Google Drive</span>
         </a>
-        <button id="btn-toggle-engine" onclick="toggleEngine()" class="text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-md">
-          <i class="fa-solid fa-power-off"></i>
+        <button id="btn-toggle-engine" onclick="toggleEngine()" class="text-xs font-semibold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl transition flex items-center gap-2 shadow-md">
+          <i class="fa-solid fa-power-off text-xs"></i>
           <span id="engine-btn-text">Memuat...</span>
         </button>
       </div>
+
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6 sm:space-y-8">
 
-    <!-- Status Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- Engine Status -->
-      <div class="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Status Pemantauan</p>
-          <div class="flex items-center gap-2 mt-1">
-            <span id="badge-engine" class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
-              <span class="w-2 h-2 rounded-full bg-zinc-500"></span> Memuat...
-            </span>
+    <!-- Status Metric Cards (Fully Responsive Grid) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      
+      <!-- Card 1: Bot State -->
+      <div class="p-4 sm:p-5 rounded-2xl glass-card border border-zinc-800/80 shadow-sm flex flex-col justify-between hover:border-zinc-700 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] sm:text-xs font-bold text-zinc-400 uppercase tracking-wider">Status Bot</span>
+          <div class="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center text-zinc-300 text-xs">
+            <i class="fa-solid fa-satellite-dish"></i>
           </div>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-zinc-800/70 flex items-center justify-center text-zinc-300 text-lg">
-          <i class="fa-solid fa-satellite-dish"></i>
+        <div class="mt-3">
+          <span id="badge-engine" class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+            <span class="w-2 h-2 rounded-full bg-zinc-500"></span> Memuat...
+          </span>
         </div>
       </div>
 
-      <!-- VPS Disk & RAM Health -->
-      <div class="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 shadow-sm flex items-center justify-between">
-        <div class="min-w-0 pr-2">
-          <p class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Kapasitas SSD VPS</p>
-          <div class="flex items-baseline gap-1.5 mt-1">
-            <p id="stat-disk-free" class="text-xl font-bold text-white">-- GB</p>
-            <span class="text-xs text-zinc-400">tersisa</span>
-          </div>
-          <div class="w-28 bg-zinc-800 rounded-full h-1.5 mt-1.5 overflow-hidden">
-            <div id="stat-disk-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+      <!-- Card 2: Active Recordings -->
+      <div class="p-4 sm:p-5 rounded-2xl glass-card border border-zinc-800/80 shadow-sm flex flex-col justify-between hover:border-zinc-700 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] sm:text-xs font-bold text-zinc-400 uppercase tracking-wider">Sedang Direkam</span>
+          <div class="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 text-xs">
+            <i class="fa-solid fa-record-vinyl animate-spin" style="animation-duration: 4s;"></i>
           </div>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-zinc-800/70 flex items-center justify-center text-emerald-400 text-lg shrink-0">
-          <i class="fa-solid fa-server"></i>
+        <div class="mt-2 flex items-baseline gap-2">
+          <p id="stat-recording-now" class="text-2xl sm:text-3xl font-extrabold text-rose-500 tracking-tight">0</p>
+          <span class="text-xs text-zinc-400 font-medium">live aktif</span>
         </div>
       </div>
 
-      <!-- Currently Active Live -->
-      <div class="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Sedang Direkam</p>
-          <p id="stat-recording-now" class="text-2xl font-bold mt-1 text-rose-500">0</p>
+      <!-- Card 3: Storage VPS -->
+      <div class="p-4 sm:p-5 rounded-2xl glass-card border border-zinc-800/80 shadow-sm flex flex-col justify-between hover:border-zinc-700 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] sm:text-xs font-bold text-zinc-400 uppercase tracking-wider">Penyimpanan VPS</span>
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs">
+            <i class="fa-solid fa-server"></i>
+          </div>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 text-lg">
-          <i class="fa-solid fa-record-vinyl animate-spin" style="animation-duration: 4s;"></i>
+        <div class="mt-2">
+          <div class="flex items-baseline justify-between">
+            <p id="stat-disk-free" class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">-- GB</p>
+            <span id="stat-disk-pct" class="text-[11px] font-bold text-emerald-400">0%</span>
+          </div>
+          <div class="w-full bg-zinc-800/80 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div id="stat-disk-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-700" style="width: 0%"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Target Count -->
-      <div class="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 shadow-sm flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Target Akun</p>
-          <p id="stat-total-targets" class="text-2xl font-bold mt-1 text-white">0</p>
+      <!-- Card 4: Targets Count -->
+      <div class="p-4 sm:p-5 rounded-2xl glass-card border border-zinc-800/80 shadow-sm flex flex-col justify-between hover:border-zinc-700 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] sm:text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Target</span>
+          <div class="w-8 h-8 rounded-xl bg-zinc-800/80 flex items-center justify-center text-zinc-300 text-xs">
+            <i class="fa-solid fa-users"></i>
+          </div>
         </div>
-        <div class="w-12 h-12 rounded-xl bg-zinc-800/70 flex items-center justify-center text-zinc-300 text-lg">
-          <i class="fa-solid fa-users"></i>
+        <div class="mt-2 flex items-baseline gap-2">
+          <p id="stat-total-targets" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">0</p>
+          <span class="text-xs text-zinc-400 font-medium">akun terdaftar</span>
         </div>
       </div>
+
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Workspace (Responsive 12-Column Grid) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
 
-      <!-- Left Column: Target List (2 Cols) -->
-      <div class="lg:col-span-2 space-y-6">
+      <!-- Left Column: Targets & Video Vault (7 Cols on desktop) -->
+      <div class="lg:col-span-7 space-y-6 sm:space-y-8">
         
-        <!-- Header & Add Form Toggle -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-900/70 p-5 rounded-2xl border border-zinc-800">
-          <div>
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-list-check text-rose-500"></i>
-              Daftar Target Pemantauan
-            </h2>
-            <p class="text-xs text-zinc-400 mt-0.5">Merekam otomatis begitu live & upload bertahap ke Google Drive.</p>
-          </div>
-          <button onclick="document.getElementById('add-modal').classList.toggle('hidden')" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-rose-900/20 transition self-start sm:self-auto">
-            <i class="fa-solid fa-plus"></i> Tambah Akun Target
-          </button>
-        </div>
-
-        <!-- Add Target Modal -->
-        <div id="add-modal" class="hidden bg-zinc-900 p-6 rounded-2xl border border-zinc-700 shadow-xl space-y-4">
-          <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <h3 class="font-bold text-sm text-zinc-200 flex items-center gap-2">
-              <i class="fa-solid fa-user-plus text-rose-400"></i> Tambah Target Baru
-            </h3>
-            <button onclick="document.getElementById('add-modal').classList.add('hidden')" class="text-zinc-400 hover:text-white">
-              <i class="fa-solid fa-xmark"></i>
+        <!-- Target Header & Add Trigger -->
+        <div class="glass-card p-5 sm:p-6 rounded-3xl border border-zinc-800/80 shadow-md space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-list-check"></i>
+                </span>
+                Target Pemantauan
+              </h2>
+              <p class="text-xs text-zinc-400 font-medium mt-1">Bot memantau 24/7 dan merekam begitu streamer online.</p>
+            </div>
+            
+            <button onclick="openAddModal()" class="w-full sm:w-auto px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-rose-900/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+              <i class="fa-solid fa-plus text-xs"></i> Tambah Akun Target
             </button>
           </div>
 
-          <form id="form-add-target" onsubmit="addTarget(event)" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-xs font-medium text-zinc-400 mb-1">Platform</label>
-                <select id="input-platform" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500">
-                  <option value="tiktok">TikTok Live</option>
-                  <option value="band">Band.us Live</option>
-                  <option value="youtube">YouTube Live</option>
-                  <option value="twitch">Twitch</option>
-                  <option value="kick">Kick</option>
-                  <option value="custom">URL Streaming Bebas</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-zinc-400 mb-1">Kualitas Video</label>
-                <select id="input-quality" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500">
-                  <option value="hd">HD 720p/1080p (Standar)</option>
-                  <option value="origin">Origin (Kualitas Asli)</option>
-                  <option value="sd">SD 480p (Hemat Kuota)</option>
-                  <option value="audio_only">Hanya Audio (MP3/Podcast)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-zinc-400 mb-1">Username / Link</label>
-                <input type="text" id="input-username" required placeholder="@akun atau URL band" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500">
-              </div>
+          <!-- Target Cards Container -->
+          <div id="targets-container" class="space-y-3 pt-1">
+            <div class="p-8 text-center text-zinc-500 text-xs font-medium">
+              <i class="fa-solid fa-circle-notch animate-spin text-xl mb-2 text-rose-500"></i>
+              <p>Menghubungkan ke pemantauan...</p>
             </div>
-
-            <div class="flex justify-end space-x-2 pt-2">
-              <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium">Batal</button>
-              <button type="submit" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-1.5">
-                <i class="fa-solid fa-check"></i> Simpan Target
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Targets Cards List -->
-        <div id="targets-container" class="space-y-3">
-          <div class="p-8 text-center text-zinc-500 text-sm">
-            <i class="fa-solid fa-circle-notch animate-spin text-xl mb-2"></i>
-            <p>Memuat daftar target...</p>
           </div>
         </div>
 
-        <!-- Video Player & Local Gallery -->
-        <div class="bg-zinc-900/70 p-5 rounded-2xl border border-zinc-800 space-y-4">
-          <div class="flex items-center justify-between">
+        <!-- Video Player & Local Recordings Vault -->
+        <div class="glass-card p-5 sm:p-6 rounded-3xl border border-zinc-800/80 shadow-md space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
             <div>
-              <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-film text-amber-400"></i>
+              <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-film"></i>
+                </span>
                 Pemutar Video & Rekaman Lokal
               </h3>
-              <p class="text-xs text-zinc-400">Format nama: [Platform] Nama - Tanggal Jam WIB</p>
+              <p class="text-xs text-zinc-400 font-medium mt-1">Putar hasil rekaman langsung dari browser tanpa download.</p>
             </div>
-            <button onclick="loadRecordings()" class="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition flex items-center gap-1">
-              <i class="fa-solid fa-rotate-right"></i> Refresh
-            </button>
+            <div class="flex items-center gap-2">
+              <input type="text" id="search-recordings" oninput="filterRecordings(this.value)" placeholder="Cari nama file..." class="bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-rose-500 w-36 sm:w-44 transition">
+              <button onclick="loadRecordings()" class="w-8 h-8 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 flex items-center justify-center transition" title="Refresh file">
+                <i class="fa-solid fa-rotate-right text-xs"></i>
+              </button>
+            </div>
           </div>
 
-          <div id="recordings-container" class="space-y-2 max-h-60 overflow-y-auto">
-            <p class="text-xs text-zinc-500 italic p-3 text-center">Memuat daftar file...</p>
+          <!-- Video Files List -->
+          <div id="recordings-container" class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            <p class="text-xs text-zinc-500 italic p-4 text-center">Memuat daftar rekaman...</p>
           </div>
         </div>
 
       </div>
 
-      <!-- Right Column: Live Console & Storage Info -->
-      <div class="space-y-6">
+      <!-- Right Column: Real-Time Console & Cloud Info (5 Cols on desktop) -->
+      <div class="lg:col-span-5 space-y-6 sm:space-y-8">
 
-        <!-- Real-Time Activity Log Console -->
-        <div class="bg-zinc-900/70 rounded-2xl border border-zinc-800 overflow-hidden flex flex-col h-96">
-          <div class="px-4 py-3 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+        <!-- Sleek Live Terminal Console -->
+        <div class="glass-card rounded-3xl border border-zinc-800/80 shadow-md overflow-hidden flex flex-col h-[460px]">
+          <!-- macOS Terminal Header -->
+          <div class="px-5 py-3.5 bg-zinc-900/90 border-b border-zinc-800/80 flex items-center justify-between">
             <div class="flex items-center space-x-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
-              <h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider">Aktivitas Bot (Live Logs)</h3>
+              <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+              <span class="text-xs font-bold text-zinc-300 ml-2 font-mono">live_engine.log</span>
             </div>
-            <button onclick="clearLogs()" class="text-xs text-zinc-400 hover:text-white" title="Bersihkan tampilan">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+              <button onclick="clearLogs()" class="text-zinc-500 hover:text-zinc-300 text-xs transition p-1" title="Bersihkan log">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
           </div>
-          <div id="log-console" class="p-4 font-mono text-xs text-zinc-300 flex-1 overflow-y-auto space-y-1.5 leading-relaxed bg-zinc-950/70">
-            <p class="text-zinc-500 italic">Menghubungkan ke log recorder...</p>
+
+          <!-- Log Content Area -->
+          <div id="log-console" class="p-4 sm:p-5 font-mono text-[11px] sm:text-xs text-zinc-300 flex-1 overflow-y-auto space-y-2 leading-relaxed bg-[#0c0c0e]">
+            <p class="text-zinc-600 italic">Menghubungkan ke live logger stream...</p>
           </div>
         </div>
 
-        <!-- Google Drive & Segment Info -->
-        <div class="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+        <!-- Google Drive & Cloud Vault Info -->
+        <div class="glass-card p-5 sm:p-6 rounded-3xl border border-zinc-800/80 shadow-md space-y-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-lg shrink-0">
               <i class="fa-solid fa-cloud-arrow-up"></i>
             </div>
-            <div>
-              <h4 class="text-xs font-bold text-zinc-200">Auto Sync Google Drive</h4>
-              <p class="text-xs text-zinc-400">Segmen per jam langsung ter-upload</p>
+            <div class="min-w-0">
+              <h4 class="text-sm font-bold text-white">Google Drive Rclone Cloud</h4>
+              <p class="text-xs text-zinc-400 font-medium">Auto-upload per part (60 menit) tanpa delay.</p>
             </div>
           </div>
-          <div class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-400 break-all flex items-center justify-between gap-2">
-            <span class="truncate font-mono text-[11px] text-zinc-300">Folder ID: {{ gdrive_folder_id }}</span>
-            <a href="https://drive.google.com/drive/folders/{{ gdrive_folder_id }}" target="_blank" class="text-rose-400 hover:underline shrink-0 font-medium">Buka Drive</a>
+          <div class="p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-400 flex items-center justify-between gap-3">
+            <span class="truncate font-mono text-[11px] text-zinc-300 font-medium">Folder ID: {{ gdrive_folder_id }}</span>
+            <a href="https://drive.google.com/drive/folders/{{ gdrive_folder_id }}" target="_blank" class="px-3 py-1 rounded-xl bg-amber-500/15 text-amber-300 hover:bg-amber-500 hover:text-zinc-950 font-bold transition text-xs shrink-0 flex items-center gap-1.5">
+              <span>Buka</span> <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+            </a>
           </div>
         </div>
 
@@ -361,44 +366,156 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   </main>
 
-  <!-- Video Player Modal -->
-  <div id="video-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-3xl w-full p-4 space-y-3 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
-        <h4 id="video-modal-title" class="font-bold text-xs text-zinc-200 truncate">Memutar Video</h4>
-        <button onclick="closeVideoModal()" class="text-zinc-400 hover:text-white text-sm">
-          <i class="fa-solid fa-xmark"></i>
+  <!-- Custom Styled Modern Modal: Tambah Target Baru -->
+  <div id="add-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
+    <div class="bg-[#121215] border border-zinc-700/80 rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Modal Accent Glow -->
+      <div class="absolute -top-16 -right-16 w-36 h-36 bg-rose-600/20 rounded-full blur-2xl pointer-events-none"></div>
+
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-base text-white">Tambah Target Pemantauan</h3>
+            <p class="text-xs text-zinc-400 font-medium">Pilih platform dan tentukan kualitas rekaman.</p>
+          </div>
+        </div>
+        <button onclick="closeAddModal()" class="w-8 h-8 rounded-xl bg-zinc-800/70 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
-      <div class="aspect-video bg-black rounded-xl overflow-hidden flex items-center justify-center relative">
-        <video id="player-element" controls class="w-full h-full object-contain" onerror="onPlayerError()"></video>
-        <div id="player-error-msg" class="hidden absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-center p-4 text-center space-y-2">
-          <i class="fa-solid fa-triangle-exclamation text-amber-400 text-2xl"></i>
-          <p class="text-xs font-semibold text-zinc-200">Video Sedang Aktif Ditulis / Diunggah</p>
-          <p class="text-[11px] text-zinc-400 max-w-sm">File ini baru saja mulai direkam dan header video sedang difinalisasi oleh server. Tunggu 10-20 detik lalu refresh atau tonton langsung di Google Drive.</p>
+
+      <!-- Form Inputs -->
+      <form id="form-add-target" onsubmit="addTarget(event)" class="space-y-5">
+        
+        <!-- Custom Dropdown 1: Platform Selection -->
+        <div>
+          <label class="block text-xs font-bold text-zinc-300 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-shapes text-rose-400 text-xs"></i> Platform Streaming
+          </label>
+          <div class="relative">
+            <select id="input-platform" class="w-full bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-700/90 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm text-zinc-100 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-semibold pr-10 shadow-sm">
+              <option value="tiktok" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">📱 TikTok Live (Otomatis & Tembus 18+)</option>
+              <option value="band" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">👥 Band.us Live Stream</option>
+              <option value="youtube" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">▶️ YouTube Live</option>
+              <option value="twitch" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">🟣 Twitch TV</option>
+              <option value="kick" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">⚡ Kick Live</option>
+              <option value="custom" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">🌐 Custom / URL Bebas</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+              <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Dropdown 2: Quality Selection -->
+        <div>
+          <label class="block text-xs font-bold text-zinc-300 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-amber-400 text-xs"></i> Kualitas Resolusi Video
+          </label>
+          <div class="relative">
+            <select id="input-quality" class="w-full bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-700/90 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm text-zinc-100 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-semibold pr-10 shadow-sm">
+              <option value="hd" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">✨ HD 720p / 1080p (Standar Kualitas Terbaik)</option>
+              <option value="origin" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">💎 Origin (Kualitas Maksimal dari Streamer)</option>
+              <option value="sd" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">⚡ SD 480p (Hemat Ruang Penyimpanan)</option>
+              <option value="audio_only" class="bg-zinc-900 py-2.5 text-zinc-100 font-medium">🎙️ Hanya Audio (MP3 Podcast / Hemat 90% Storage)</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+              <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Username / Link -->
+        <div>
+          <label class="block text-xs font-bold text-zinc-300 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-at text-rose-400 text-xs"></i> Username atau Link Channel
+          </label>
+          <input type="text" id="input-username" required placeholder="Contoh: @rrenerren29 atau URL channel" class="w-full bg-zinc-900/90 border border-zinc-700/90 focus:border-rose-500 rounded-2xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/20 transition-all font-semibold shadow-sm">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-zinc-800/80">
+          <button type="button" onclick="closeAddModal()" class="px-5 py-2.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 text-xs font-bold transition">Batal</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-900/30 transition-all hover:scale-[1.02]">
+            <i class="fa-solid fa-check text-xs"></i> Simpan Target
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Custom Video Player Modal -->
+  <div id="video-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 transition-all duration-300">
+    <div class="bg-[#121215] border border-zinc-700/80 rounded-3xl max-w-4xl w-full p-4 sm:p-6 space-y-4 shadow-2xl relative overflow-hidden">
+      
+      <!-- Video Header -->
+      <div class="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+        <div class="flex items-center space-x-3 min-w-0 pr-2">
+          <span class="w-7 h-7 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-xs shrink-0">
+            <i class="fa-solid fa-play"></i>
+          </span>
+          <h4 id="video-modal-title" class="font-extrabold text-xs sm:text-sm text-zinc-100 truncate">Memutar Video</h4>
+        </div>
+        <button onclick="closeVideoModal()" class="w-8 h-8 rounded-xl bg-zinc-850 hover:bg-zinc-750 text-zinc-400 hover:text-white flex items-center justify-center transition shrink-0">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Player Frame -->
+      <div class="aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center relative border border-zinc-800">
+        <video id="player-element" controls preload="metadata" class="w-full h-full object-contain" onerror="onPlayerError()"></video>
+        
+        <!-- Helpful notice if stream is still being written -->
+        <div id="player-error-msg" class="hidden absolute inset-0 bg-zinc-950/95 flex flex-col items-center justify-center p-6 text-center space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <h5 class="text-sm font-bold text-white">Video Sedang Diinisialisasi / Ditulis</h5>
+          <p class="text-xs text-zinc-400 max-w-md leading-relaxed">
+            File rekaman ini baru saja dibuat. Tunggu beberapa saat agar potongan video terbentuk, atau tonton langsung di Google Drive setelah live selesai.
+          </p>
+          <button onclick="retryPlayer()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-200 transition">
+            <i class="fa-solid fa-rotate-right mr-1.5"></i> Coba Putar Ulang
+          </button>
         </div>
       </div>
-      <div class="flex justify-end">
-        <button onclick="closeVideoModal()" class="px-4 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700">Tutup</button>
+
+      <!-- Footer Info -->
+      <div class="flex items-center justify-between text-xs text-zinc-400 pt-1">
+        <span class="text-[11px] font-mono text-zinc-500 flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check text-emerald-400 text-[9px]"></i> Format: Fragmented MP4 (H.264/AAC)
+        </span>
+        <button onclick="closeVideoModal()" class="px-5 py-2 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 font-bold transition">Tutup</button>
       </div>
+
     </div>
   </div>
 
   <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold"></div>
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold border"></div>
 
+  <!-- Client JavaScript -->
   <script>
     let isRunning = false;
+    let cachedRecordings = [];
+    let currentVideoUrl = '';
 
     function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
-      toast.className = `fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold ${
-        isError ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+      toast.className = `fixed bottom-5 right-5 z-50 transform translate-y-0 opacity-100 transition-all duration-300 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold border ${
+        isError ? 'bg-rose-950/90 text-rose-200 border-rose-800/80 shadow-rose-950/50' : 'bg-emerald-950/90 text-emerald-200 border-emerald-800/80 shadow-emerald-950/50'
       }`;
-      toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> ${msg}`;
+      toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-circle-exclamation text-rose-400 text-sm' : 'fa-circle-check text-emerald-400 text-sm'}"></i> <span>${msg}</span>`;
       setTimeout(() => {
-        toast.className = 'fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold';
-      }, 3000);
+        toast.className = 'fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-bold border';
+      }, 3500);
     }
 
     async function refreshStatus() {
@@ -413,14 +530,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         const badge = document.getElementById('badge-engine');
 
         if (isRunning) {
-          btn.className = "text-xs font-semibold px-4 py-2 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white transition flex items-center gap-2 shadow-md";
+          btn.className = "text-xs font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-rose-600/15 text-rose-400 border border-rose-500/30 hover:bg-rose-600 hover:text-white transition flex items-center gap-2 shadow-sm";
           btnText.innerText = "Hentikan Bot";
-          badge.className = "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+          badge.className = "inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
           badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span> Aktif Memantau`;
         } else {
-          btn.className = "text-xs font-semibold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-2 shadow-md shadow-emerald-900/20";
+          btn.className = "text-xs font-bold px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-2 shadow-md shadow-emerald-900/30";
           btnText.innerText = "Mulai Bot";
-          badge.className = "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700";
+          badge.className = "inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700";
           badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-zinc-500"></span> Berhenti`;
         }
 
@@ -439,6 +556,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         const res = await fetch('/api/health');
         const h = await res.json();
         document.getElementById('stat-disk-free').innerText = `${h.disk_free_gb} GB`;
+        document.getElementById('stat-disk-pct').innerText = `${h.disk_pct}%`;
         const bar = document.getElementById('stat-disk-bar');
         bar.style.width = `${h.disk_pct}%`;
         if (h.disk_pct > 85) bar.className = 'bg-rose-500 h-1.5 rounded-full';
@@ -451,9 +569,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       const container = document.getElementById('targets-container');
       if (!targets || targets.length === 0) {
         container.innerHTML = `
-          <div class="p-8 text-center bg-zinc-900/40 rounded-2xl border border-dashed border-zinc-800 text-zinc-400 space-y-2">
-            <i class="fa-solid fa-user-slash text-2xl text-zinc-600"></i>
-            <p class="text-sm">Belum ada akun target yang dipantau.</p>
+          <div class="p-8 text-center bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800 text-zinc-400 space-y-2">
+            <i class="fa-solid fa-user-slash text-2xl text-zinc-600 mb-1"></i>
+            <p class="text-sm font-semibold text-zinc-300">Belum ada akun target yang dipantau.</p>
             <p class="text-xs text-zinc-500">Klik tombol "Tambah Akun Target" di atas untuk menambahkan.</p>
           </div>
         `;
@@ -476,28 +594,29 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         const qual = (t.quality || 'hd').toUpperCase();
 
         return `
-          <div class="p-4 rounded-2xl bg-zinc-900/60 border ${isLive ? 'border-rose-500 shadow-lg shadow-rose-950/40' : 'border-zinc-800/80'} hover:border-zinc-700 transition flex items-center justify-between gap-4">
-            <div class="flex items-center space-x-3.5 min-w-0">
-              <div class="w-11 h-11 rounded-xl border ${pInfo.color} flex items-center justify-center shrink-0 text-base">
+          <div class="p-4 rounded-2xl bg-zinc-900/60 border ${isLive ? 'border-rose-500 shadow-xl shadow-rose-950/40 bg-gradient-to-r from-rose-950/30 to-zinc-900/70' : 'border-zinc-800/80'} hover:border-zinc-700 transition-all duration-200 flex items-center justify-between gap-3 sm:gap-4">
+            
+            <div class="flex items-center space-x-3 sm:space-x-4 min-w-0">
+              <div class="w-11 h-11 rounded-2xl border ${pInfo.color} flex items-center justify-center shrink-0 text-base shadow-sm">
                 <i class="fa-brands ${pInfo.icon}"></i>
               </div>
               <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <h4 class="font-bold text-sm text-white truncate">${t.username}</h4>
-                  <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${pInfo.color}">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h4 class="font-bold text-sm text-white truncate max-w-[150px] sm:max-w-none">${t.username}</h4>
+                  <span class="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${pInfo.color}">
                     ${plat}
                   </span>
-                  <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700">
                     ${qual}
                   </span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                   ${isLive ? `
-                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-extrabold text-rose-400">
                       <span class="w-2 h-2 rounded-full bg-rose-500 pulse-dot"></span> SEDANG LIVE & DIREKAM
                     </span>
                   ` : `
-                    <span class="text-xs text-zinc-400 flex items-center gap-1">
+                    <span class="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
                       <span class="w-1.5 h-1.5 rounded-full ${t.enabled ? 'bg-zinc-500' : 'bg-zinc-700'}"></span>
                       ${t.enabled ? 'Standby (Offline)' : 'Dinonaktifkan'}
                     </span>
@@ -506,12 +625,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
               </div>
             </div>
 
-            <div class="flex items-center space-x-2 shrink-0">
-              <button onclick="toggleTarget('${t.username}', '${plat}')" title="${t.enabled ? 'Nonaktifkan' : 'Aktifkan'}" class="w-8 h-8 rounded-lg ${t.enabled ? 'bg-zinc-800 text-zinc-300 hover:text-white' : 'bg-zinc-800 text-zinc-600 hover:text-zinc-400'} flex items-center justify-center text-xs transition">
-                <i class="fa-solid ${t.enabled ? 'fa-toggle-on text-emerald-400 text-sm' : 'fa-toggle-off'}"></i>
+            <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+              <button onclick="toggleTarget('${t.username}', '${plat}')" title="${t.enabled ? 'Nonaktifkan' : 'Aktifkan'}" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${t.enabled ? 'bg-zinc-800 text-zinc-300 hover:text-white' : 'bg-zinc-850 text-zinc-600 hover:text-zinc-400'} flex items-center justify-center text-xs transition border border-zinc-750">
+                <i class="fa-solid ${t.enabled ? 'fa-toggle-on text-emerald-400 text-base' : 'fa-toggle-off text-sm'}"></i>
               </button>
-              <button onclick="deleteTarget('${t.username}', '${plat}')" title="Hapus Target" class="w-8 h-8 rounded-lg bg-zinc-800/70 hover:bg-rose-900/30 text-zinc-400 hover:text-rose-400 flex items-center justify-center text-xs transition">
-                <i class="fa-solid fa-trash"></i>
+              <button onclick="deleteTarget('${t.username}', '${plat}')" title="Hapus Target" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-850 hover:bg-rose-950/40 text-zinc-400 hover:text-rose-400 flex items-center justify-center text-xs transition border border-zinc-750">
+                <i class="fa-solid fa-trash-can"></i>
               </button>
             </div>
           </div>
@@ -529,6 +648,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       } catch (err) {
         showToast("Gagal mengubah status bot", true);
       }
+    }
+
+    function openAddModal() {
+      document.getElementById('add-modal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+      document.getElementById('add-modal').classList.add('hidden');
     }
 
     async function addTarget(e) {
@@ -549,7 +676,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         if (data.success) {
           showToast(data.message);
           document.getElementById('input-username').value = '';
-          document.getElementById('add-modal').classList.add('hidden');
+          closeAddModal();
           refreshStatus();
         } else {
           showToast(data.message, true);
@@ -595,33 +722,50 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       try {
         const res = await fetch('/api/recordings');
         const data = await res.json();
-        if (!data.recordings || data.recordings.length === 0) {
-          c.innerHTML = '<p class="text-xs text-zinc-500 italic p-3 text-center">Belum ada rekaman lokal (file langsung otomatis diunggah ke Google Drive).</p>';
-          return;
-        }
-
-        c.innerHTML = data.recordings.map(r => `
-          <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
-            <div class="min-w-0 pr-3">
-              <p class="font-medium text-zinc-200 truncate" title="${r.name}">${r.name}</p>
-              <p class="text-[10px] text-zinc-500">${r.size_mb} MB • ${r.mtime}</p>
-            </div>
-            <div class="flex items-center space-x-2 shrink-0">
-              <button onclick="playVideo('${r.url}', '${r.name}')" class="px-2.5 py-1 rounded bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white transition flex items-center gap-1">
-                <i class="fa-solid fa-play text-[10px]"></i> Putar
-              </button>
-              <a href="${r.url}" download class="w-6 h-6 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 flex items-center justify-center">
-                <i class="fa-solid fa-download text-[10px]"></i>
-              </a>
-            </div>
-          </div>
-        `).join('');
+        cachedRecordings = data.recordings || [];
+        renderRecordingsList(cachedRecordings);
       } catch (e) {
-        c.innerHTML = '<p class="text-xs text-rose-400 p-2 text-center">Gagal memuat rekaman.</p>';
+        c.innerHTML = '<p class="text-xs text-rose-400 p-3 text-center">Gagal memuat rekaman.</p>';
       }
     }
 
+    function renderRecordingsList(files) {
+      const c = document.getElementById('recordings-container');
+      if (!files || files.length === 0) {
+        c.innerHTML = '<p class="text-xs text-zinc-500 italic p-4 text-center">Belum ada rekaman lokal (file langsung otomatis diunggah ke Google Drive).</p>';
+        return;
+      }
+
+      c.innerHTML = files.map(r => `
+        <div class="p-3 rounded-2xl bg-zinc-900/70 border border-zinc-800/80 hover:border-zinc-700 flex items-center justify-between text-xs transition duration-150">
+          <div class="min-w-0 pr-3">
+            <p class="font-bold text-zinc-200 truncate" title="${r.name}">${r.name}</p>
+            <p class="text-[10px] text-zinc-500 font-medium mt-0.5">${r.size_mb} MB • ${r.mtime} WIB</p>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <button onclick="playVideo('${r.url}', '${r.name}')" class="px-3 py-1.5 rounded-xl bg-rose-600/15 hover:bg-rose-600 text-rose-400 hover:text-white transition font-bold flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-play text-[10px]"></i> Putar
+            </button>
+            <a href="${r.url}" download class="w-8 h-8 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition border border-zinc-750" title="Unduh Video">
+              <i class="fa-solid fa-download text-xs"></i>
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterRecordings(query) {
+      const q = query.toLowerCase().trim();
+      if (!q) {
+        renderRecordingsList(cachedRecordings);
+        return;
+      }
+      const filtered = cachedRecordings.filter(r => r.name.toLowerCase().includes(q));
+      renderRecordingsList(filtered);
+    }
+
     function playVideo(url, name) {
+      currentVideoUrl = url;
       document.getElementById('video-modal-title').innerText = name;
       const player = document.getElementById('player-element');
       const errBox = document.getElementById('player-error-msg');
@@ -634,8 +778,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       document.getElementById('video-modal').classList.remove('hidden');
       
       player.play().catch(err => {
-        console.log("Playback info:", err);
+        console.log("Player playback notice:", err);
       });
+    }
+
+    function retryPlayer() {
+      if (currentVideoUrl) {
+        playVideo(currentVideoUrl, document.getElementById('video-modal-title').innerText);
+      }
     }
 
     function onPlayerError() {
@@ -662,8 +812,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           consoleEl.innerHTML = data.logs.map(line => {
             let color = 'text-zinc-300';
             if (line.includes('LIVE TERDETEKSI')) color = 'text-rose-400 font-bold';
-            else if (line.includes('Sukses') || line.includes('ter-upload')) color = 'text-emerald-400 font-medium';
-            else if (line.includes('WARNING') || line.includes('Error')) color = 'text-amber-400';
+            else if (line.includes('Sukses') || line.includes('ter-upload')) color = 'text-emerald-400 font-semibold';
+            else if (line.includes('WARNING') || line.includes('Error')) color = 'text-amber-400 font-medium';
             return `<div class="${color}">${escapeHtml(line)}</div>`;
           }).join('');
           consoleEl.scrollTop = consoleEl.scrollHeight;
@@ -672,13 +822,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     }
 
     function clearLogs() {
-      document.getElementById('log-console').innerHTML = '<p class="text-zinc-500 italic">Log dibersihkan.</p>';
+      document.getElementById('log-console').innerHTML = '<p class="text-zinc-600 italic">Log dibersihkan.</p>';
     }
 
     function escapeHtml(text) {
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
+    // Initialize Pollers
     refreshStatus();
     refreshHealth();
     loadRecordings();
@@ -870,7 +1021,7 @@ if __name__ == "__main__":
     start_engine_background()
     port = int(os.environ.get("PORT", 5000))
     print("=" * 60)
-    print("  🌐 Auto Live Stream Recorder Web UI Berjalan!")
+    print("  🌐 Auto Live Stream Recorder Web UI v2.2 Pro Berjalan!")
     print(f"  👉 Akses di Browser: http://72.60.79.72:{port}")
     print("=" * 60)
     app.run(host="0.0.0.0", port=port, debug=False)

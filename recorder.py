@@ -107,7 +107,7 @@ def check_tiktok_live(username: str, sessionid: str = "") -> tuple[bool, str]:
     """
     Cek live TikTok langsung via API resmi dengan sessionid cookie.
     Tahan anti-bot WAF dan mampu menembus live 18+ / mature restriction.
-    Mengembalikan: (is_live: bool, stream_or_page_url: str)
+    Mengembalikan: (is_live: bool, direct_stream_url: str)
     """
     clean_user = username.strip().lstrip("@")
     page_url = f"https://www.tiktok.com/@{clean_user}/live"
@@ -128,39 +128,64 @@ def check_tiktok_live(username: str, sessionid: str = "") -> tuple[bool, str]:
             live_room = room_data.get("liveRoom", {})
             room_id = user_info.get("roomId") or live_room.get("roomId")
 
-            # Jika liveRoom status == 2 (Living) atau ada room_id
-            if room_id:
-                # Verifikasi via webcast check_alive
+            status = live_room.get("status")
+            stream_data_obj = live_room.get("streamData", {})
+            pull_data = stream_data_obj.get("pull_data", {})
+            raw_sd = pull_data.get("stream_data")
+
+            stream_url = ""
+            if raw_sd:
+                try:
+                    sd_json = json.loads(raw_sd)
+                    data_obj = sd_json.get("data", {})
+                    for q in ["hd", "origin", "sd", "ld"]:
+                        if q in data_obj:
+                            main = data_obj[q].get("main", {})
+                            stream_url = main.get("flv") or main.get("hls")
+                            if stream_url:
+                                break
+                    if not stream_url and data_obj:
+                        for q_val in data_obj.values():
+                            main = q_val.get("main", {})
+                            stream_url = main.get("flv") or main.get("hls")
+                            if stream_url:
+                                break
+                except Exception:
+                    pass
+
+            # Jika liveRoom status == 2 (Living) atau ada stream_url
+            if status == 2:
+                return True, stream_url or page_url
+
+            # Jika status bukan 4 (selesai) dan punya room_id, verifikasi via check_alive
+            if room_id and status != 4:
                 check_url = f"https://webcast.tiktok.com/webcast/room/check_alive/?aid=1988&room_ids={room_id}"
                 r_check = requests.get(check_url, cookies=cookies, headers=headers, impersonate="chrome124", timeout=6)
                 if r_check.status_code == 200:
                     check_data = r_check.json()
                     alive_list = check_data.get("data", [])
                     if alive_list and alive_list[0].get("alive"):
-                        return True, page_url
-
-            # Cek status langsung
-            if live_room.get("status") == 2:
-                return True, page_url
+                        return True, stream_url or page_url
     except Exception as e:
         logger.debug(f"TikTok API check error for {clean_user}: {e}")
 
-    return False, page_url
+    return False, ""
 
 
-def is_live_active(url: str, platform: str = "", target: str = "") -> bool:
+def is_live_active(url: str, platform: str = "", target: str = "") -> tuple[bool, str]:
     """
     Cek apakah target sedang live.
     Gunakan TikTok API untuk TikTok, atau streamlink & yt-dlp untuk platform lain.
+    Mengembalikan (is_live: bool, direct_or_page_url: str)
     """
     cfg = load_config()
     sessionid = cfg.get("tiktok_sessionid", "")
 
     if platform.lower() == "tiktok" or "tiktok.com" in url:
         username = target if target else url.split("@")[-1].split("/")[0]
-        active, _ = check_tiktok_live(username, sessionid)
+        active, stream_url = check_tiktok_live(username, sessionid)
         if active:
-            return True
+            return True, stream_url
 
     # Cek via streamlink dengan cookie sessionid jika ada
     try:
@@ -171,7 +196,7 @@ def is_live_active(url: str, platform: str = "", target: str = "") -> bool:
             session.set_option("http-headers", "Referer=https://www.tiktok.com/")
         streams = session.streams(url)
         if streams:
-            return True
+            return True, url
     except Exception:
         pass
 
@@ -187,11 +212,11 @@ def is_live_active(url: str, platform: str = "", target: str = "") -> bool:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             if info and info.get("is_live"):
-                return True
+                return True, url
     except Exception:
         pass
 
-    return False
+    return False, ""
 
 
 def record_stream(url: str, output_path: str, platform: str, target: str, stop_event: threading.Event = None) -> bool:
@@ -214,25 +239,41 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
     cfg = load_config()
     sessionid = cfg.get("tiktok_sessionid", "")
 
-    extra_args = []
-    if sessionid and (platform.lower() == "tiktok" or "tiktok.com" in url):
-        extra_args.extend([
-            "--http-cookie", f"sessionid={sessionid}",
-            "--http-header", "Referer=https://www.tiktok.com/",
-            "--http-header", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-        ])
+    # Mode 1: Jika URL sudah berupa direct CDN Stream (.flv atau .m3u8 tiktokcdn)
+    if "tiktokcdn.com" in url or ".flv" in url or (url.startswith("http") and ".m3u8" in url):
+        headers_str = "Referer: https://www.tiktok.com/\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36\r\n"
+        cmd = [
+            "ffmpeg", "-y",
+            "-headers", headers_str,
+            "-i", url,
+            "-c", "copy",
+            "-reconnect", "1",
+            "-reconnect_at_eof", "1",
+            "-reconnect_streamed", "1",
+            "-reconnect_delay_max", "5",
+            output_path
+        ]
+    else:
+        # Mode 2: Streamlink untuk platform umum (Twitch, YouTube, Kick)
+        extra_args = []
+        if sessionid and (platform.lower() == "tiktok" or "tiktok.com" in url):
+            extra_args.extend([
+                "--http-cookie", f"sessionid={sessionid}",
+                "--http-header", "Referer=https://www.tiktok.com/",
+                "--http-header", "User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+            ])
 
-    cmd = [
-        sys.executable, "-m", "streamlink",
-        "--default-stream", "best",
-        "--retry-streams", "5",
-        "--retry-max", "5",
-        "--stream-segment-threads", "2"
-    ] + extra_args + [
-        "--output", output_path,
-        url,
-        "best"
-    ]
+        cmd = [
+            sys.executable, "-m", "streamlink",
+            "--default-stream", "best",
+            "--retry-streams", "5",
+            "--retry-max", "5",
+            "--stream-segment-threads", "2"
+        ] + extra_args + [
+            "--output", output_path,
+            url,
+            "best"
+        ]
 
     try:
         process = subprocess.Popen(
@@ -328,23 +369,20 @@ class TargetWatcher(threading.Thread):
         
         while not self.stop_event.is_set():
             try:
-                active = is_live_active(self.url, self.platform, self.target)
+                active, stream_url = is_live_active(self.url, self.platform, self.target)
                 if active:
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     safe_target = sanitize_filename(self.target.lstrip("@"))
                     filename = f"{self.platform}_{safe_target}_{timestamp}.mp4"
                     output_file = str(self.output_dir / filename)
 
-                    # Mulai rekam sampai live selesai
                     record_stream(
-                        url=self.url,
+                        url=stream_url or self.url,
                         output_path=output_file,
                         platform=self.platform,
                         target=self.target,
                         stop_event=self.stop_event
                     )
-
-                    # Jeda sebentar sebelum mulai cek lagi
                     time.sleep(10)
                 else:
                     logger.info(f"💤 [{self.platform.upper()} - {self.target}] Sedang offline. Cek lagi dalam {self.check_interval} detik...")

@@ -1,5 +1,5 @@
 """
-Flask Web Dashboard untuk Auto Live Stream Recorder v2.0
+Flask Web Dashboard untuk Auto Live Stream Recorder v2.1
 """
 
 import os
@@ -93,6 +93,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LiveStream Auto Recorder Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+  <script>
+    // Sembunyikan notifikasi production Tailwind di console
+    const _origWarn = console.warn;
+    console.warn = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('tailwindcss.com should not be used in production')) return;
+      _origWarn.apply(console, args);
+    };
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
@@ -133,7 +142,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div>
           <h1 class="font-bold text-lg leading-tight flex items-center gap-2">
             Auto Live Recorder
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-semibold">v2.0 Pro</span>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-semibold">v2.1 Pro</span>
           </h1>
           <p class="text-xs text-zinc-400">TikTok, Band.us, YouTube, Twitch, Kick</p>
         </div>
@@ -296,7 +305,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <i class="fa-solid fa-film text-amber-400"></i>
                 Pemutar Video & Rekaman Lokal
               </h3>
-              <p class="text-xs text-zinc-400">Putar langsung cuplikan rekaman dari browser.</p>
+              <p class="text-xs text-zinc-400">Format nama: [Platform] Nama - Tanggal Jam WIB</p>
             </div>
             <button onclick="loadRecordings()" class="text-xs px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition flex items-center gap-1">
               <i class="fa-solid fa-rotate-right"></i> Refresh
@@ -361,8 +370,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      <div class="aspect-video bg-black rounded-xl overflow-hidden flex items-center justify-center">
-        <video id="player-element" controls class="w-full h-full object-contain"></video>
+      <div class="aspect-video bg-black rounded-xl overflow-hidden flex items-center justify-center relative">
+        <video id="player-element" controls class="w-full h-full object-contain" onerror="onPlayerError()"></video>
+        <div id="player-error-msg" class="hidden absolute inset-0 bg-zinc-950/90 flex flex-col items-center justify-center p-4 text-center space-y-2">
+          <i class="fa-solid fa-triangle-exclamation text-amber-400 text-2xl"></i>
+          <p class="text-xs font-semibold text-zinc-200">Video Sedang Aktif Ditulis / Diunggah</p>
+          <p class="text-[11px] text-zinc-400 max-w-sm">File ini baru saja mulai direkam dan header video sedang difinalisasi oleh server. Tunggu 10-20 detik lalu refresh atau tonton langsung di Google Drive.</p>
+        </div>
       </div>
       <div class="flex justify-end">
         <button onclick="closeVideoModal()" class="px-4 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700">Tutup</button>
@@ -582,14 +596,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         const res = await fetch('/api/recordings');
         const data = await res.json();
         if (!data.recordings || data.recordings.length === 0) {
-          c.innerHTML = '<p class="text-xs text-zinc-500 italic p-3 text-center">Belum ada rekaman lokal (file langsung dikirim ke Google Drive).</p>';
+          c.innerHTML = '<p class="text-xs text-zinc-500 italic p-3 text-center">Belum ada rekaman lokal (file langsung otomatis diunggah ke Google Drive).</p>';
           return;
         }
 
         c.innerHTML = data.recordings.map(r => `
           <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between text-xs">
             <div class="min-w-0 pr-3">
-              <p class="font-medium text-zinc-200 truncate">${r.name}</p>
+              <p class="font-medium text-zinc-200 truncate" title="${r.name}">${r.name}</p>
               <p class="text-[10px] text-zinc-500">${r.size_mb} MB • ${r.mtime}</p>
             </div>
             <div class="flex items-center space-x-2 shrink-0">
@@ -610,15 +624,31 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     function playVideo(url, name) {
       document.getElementById('video-modal-title').innerText = name;
       const player = document.getElementById('player-element');
+      const errBox = document.getElementById('player-error-msg');
+      if (errBox) errBox.classList.add('hidden');
+      player.classList.remove('hidden');
+
+      player.pause();
       player.src = url;
+      player.load();
       document.getElementById('video-modal').classList.remove('hidden');
-      player.play();
+      
+      player.play().catch(err => {
+        console.log("Playback info:", err);
+      });
+    }
+
+    function onPlayerError() {
+      document.getElementById('player-element').classList.add('hidden');
+      const errBox = document.getElementById('player-error-msg');
+      if (errBox) errBox.classList.remove('hidden');
     }
 
     function closeVideoModal() {
       const player = document.getElementById('player-element');
       player.pause();
-      player.src = '';
+      player.removeAttribute('src');
+      player.load();
       document.getElementById('video-modal').classList.add('hidden');
     }
 
@@ -634,7 +664,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             if (line.includes('LIVE TERDETEKSI')) color = 'text-rose-400 font-bold';
             else if (line.includes('Sukses') || line.includes('ter-upload')) color = 'text-emerald-400 font-medium';
             else if (line.includes('WARNING') || line.includes('Error')) color = 'text-amber-400';
-            return `<div class="${escapeHtml(line)}">${escapeHtml(line)}</div>`;
+            return `<div class="${color}">${escapeHtml(line)}</div>`;
           }).join('');
           consoleEl.scrollTop = consoleEl.scrollHeight;
         }
@@ -668,6 +698,12 @@ def index():
     return render_template_string(HTML_TEMPLATE, gdrive_folder_id=gdrive_folder_id)
 
 
+@app.route("/favicon.ico")
+def favicon():
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#f43f5e"/><polygon points="40,30 70,50 40,70" fill="white"/></svg>'
+    return (svg, 200, {'Content-Type': 'image/svg+xml'})
+
+
 @app.route("/api/health")
 def api_health():
     return jsonify(get_vps_health())
@@ -677,7 +713,12 @@ def api_health():
 def stream_recording(filename):
     cfg = load_config()
     out_dir = os.path.abspath(cfg.get("output_directory", "recordings"))
-    return send_from_directory(out_dir, filename)
+    full_path = os.path.join(out_dir, filename)
+    if not os.path.exists(full_path):
+        abort(404)
+    if os.path.getsize(full_path) < 1000:
+        return "File video masih dalam inisialisasi awal. Mohon tunggu beberapa detik.", 202
+    return send_from_directory(out_dir, filename, mimetype="video/mp4", as_attachment=False)
 
 
 @app.route("/api/recordings")

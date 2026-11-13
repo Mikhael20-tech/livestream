@@ -1,10 +1,12 @@
 """
-Core Live Recorder Engine
-Mendukung: TikTok, YouTube, Twitch, Kick, Band.us, dan Custom URLs.
-Fitur Unggulan:
+Core Live Recorder Engine v2.1
+Mendukung: TikTok, Band.us, YouTube, Twitch, Kick, dan Custom URLs.
+Fitur:
+- Penamaan file rapi & terstruktur dengan Waktu Indonesia Barat (WIB)
 - Bypass WAF & 18+ Live TikTok
 - Ekstraksi Direct CDN FLV/HLS via FFmpeg (0% CPU, Lossless)
-- Pemisahan Segmen Otomatis (Auto Segment per Jam/Durasi)
+- Fragmented MP4 (+frag_keyframe) agar bisa langsung diputar saat masih merekam
+- Pemisahan Segmen Otomatis (Part 01, Part 02) per 60 menit
 - Auto Upload Google Drive via Rclone
 - Pemantau Status Disk/RAM VPS & Storage Warning
 """
@@ -16,9 +18,12 @@ import json
 import logging
 import subprocess
 import threading
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from collections import deque
+
+# Zona Waktu Indonesia Barat (WIB = UTC+7)
+WIB = timezone(timedelta(hours=7))
 
 # In-memory log buffer for Web UI
 LOG_BUFFER = deque(maxlen=150)
@@ -50,8 +55,8 @@ logger.addHandler(bh)
 
 
 def sanitize_filename(name: str) -> str:
-    """Bersihkan karakter ilegal dari nama file Windows & Linux."""
-    keepcharacters = (' ', '.', '_', '-')
+    """Bersihkan karakter terlarang dari nama file Windows & Linux."""
+    keepcharacters = (' ', '.', '_', '-', '[', ']', '(', ')')
     return "".join(c for c in name if c.isalnum() or c in keepcharacters).rstrip()
 
 
@@ -102,7 +107,7 @@ def check_storage_alert():
     """Kirim notifikasi Telegram jika kapasitas disk tersisa di bawah threshold."""
     global LAST_STORAGE_ALERT_TIME
     now = time.time()
-    if now - LAST_STORAGE_ALERT_TIME < 3600:  # Maksimal 1 alert per jam
+    if now - LAST_STORAGE_ALERT_TIME < 3600:
         return
 
     health = get_vps_health()
@@ -157,7 +162,7 @@ def upload_to_gdrive(local_file_path: str, gdrive_cfg: dict):
     action = "move" if delete_local else "copy"
     destination = f"{remote}:{rclone_folder}/"
     filename = os.path.basename(local_file_path)
-    logger.info(f"☁️ Mengunggah {filename} ke Google Drive: {destination}...")
+    logger.info(f"☁️ Mengunggah ke Google Drive: {filename}...")
 
     try:
         cmd = ["rclone", action, local_file_path, destination, "--progress"]
@@ -174,7 +179,7 @@ def upload_to_gdrive(local_file_path: str, gdrive_cfg: dict):
             except Exception:
                 pass
             if delete_local:
-                logger.info(f"🗑️ File lokal {filename} di VPS telah dihapus agar disk tetap lega.")
+                logger.info(f"🗑️ File lokal {filename} telah dihapus agar disk VPS tetap lega.")
         else:
             logger.error(f"❌ Gagal upload ke Rclone: {res.stderr}")
     except FileNotFoundError:
@@ -187,8 +192,6 @@ def check_tiktok_live(username: str, sessionid: str = "", quality: str = "hd") -
     """
     Cek live TikTok langsung via API resmi dengan sessionid cookie.
     Tahan anti-bot WAF dan mampu menembus live 18+ / mature restriction.
-    Mendukung seleksi resolusi (hd, origin, sd, ld, audio_only).
-    Mengembalikan: (is_live: bool, direct_stream_url: str)
     """
     import urllib.request
     clean_user = username.strip().lstrip("@")
@@ -203,7 +206,6 @@ def check_tiktok_live(username: str, sessionid: str = "", quality: str = "hd") -
     if sessionid:
         headers["Cookie"] = f"sessionid={sessionid}"
 
-    # Metode 1: urllib bawaan Python (Sangat stabil & zero-dependency)
     try:
         req = urllib.request.Request(api_url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -220,7 +222,6 @@ def check_tiktok_live(username: str, sessionid: str = "", quality: str = "hd") -
                     sd_json = json.loads(raw_sd)
                     data_obj = sd_json.get("data", {})
 
-                    # Prioritas kualitas
                     q_choice = (quality or "hd").lower()
                     if q_choice == "audio_only":
                         order = ["ao"]
@@ -258,7 +259,6 @@ def check_tiktok_live(username: str, sessionid: str = "", quality: str = "hd") -
     except Exception as e:
         logger.debug(f"urllib TikTok check error: {e}")
 
-    # Metode 2: curl_cffi fallback jika tersedia
     try:
         from curl_cffi import requests
         cookies = {"sessionid": sessionid} if sessionid else {}
@@ -275,15 +275,11 @@ def check_tiktok_live(username: str, sessionid: str = "", quality: str = "hd") -
 
 
 def check_band_live(target_url: str) -> tuple[bool, str]:
-    """
-    Cek live stream Band.us via yt-dlp atau inspeksi halaman HLS.
-    Mengembalikan (is_live: bool, stream_or_page_url: str)
-    """
+    """Cek live stream Band.us via yt-dlp atau inspeksi halaman HLS."""
     clean_target = target_url.strip()
     if not clean_target.startswith("http"):
         clean_target = f"https://band.us/band/{clean_target.lstrip('@')}"
 
-    # Cek via yt-dlp
     try:
         import yt_dlp
         ydl_opts = {"quiet": True, "no_warnings": True, "extract_flat": True}
@@ -294,7 +290,6 @@ def check_band_live(target_url: str) -> tuple[bool, str]:
     except Exception:
         pass
 
-    # Cek via HTTP request jika ada tag live / m3u8
     try:
         import urllib.request
         req = urllib.request.Request(
@@ -316,11 +311,7 @@ def check_band_live(target_url: str) -> tuple[bool, str]:
 
 
 def is_live_active(url: str, platform: str = "", target: str = "", quality: str = "hd") -> tuple[bool, str]:
-    """
-    Cek apakah target sedang live.
-    Mendukung TikTok, Band.us, YouTube, Twitch, Kick.
-    Mengembalikan (is_live: bool, direct_or_page_url: str)
-    """
+    """Cek apakah target sedang live."""
     cfg = load_config()
     sessionid = cfg.get("tiktok_sessionid", "")
     plat = platform.lower()
@@ -336,7 +327,6 @@ def is_live_active(url: str, platform: str = "", target: str = "", quality: str 
         if active:
             return True, stream_url
 
-    # Cek via streamlink dengan cookie sessionid jika ada
     try:
         import streamlink
         session = streamlink.Streamlink()
@@ -349,7 +339,6 @@ def is_live_active(url: str, platform: str = "", target: str = "", quality: str 
     except Exception:
         pass
 
-    # Fallback cek via yt-dlp
     try:
         import yt_dlp
         ydl_opts = {
@@ -371,7 +360,7 @@ def is_live_active(url: str, platform: str = "", target: str = "", quality: str 
 def record_stream(url: str, output_path: str, platform: str, target: str, stop_event: threading.Event = None) -> bool:
     """
     Merekam stream menggunakan direct FFmpeg CDN atau Streamlink.
-    Mendukung pemotongan segmen per jam (segment_minutes) dan auto-upload tiap part.
+    Mendukung Fragmented MP4 (+frag_keyframe) dan pemotongan segmen per jam (Part 01, Part 02).
     """
     status_key = f"{platform.lower()}_{target.lower().lstrip('@')}"
     ACTIVE_STATUS[status_key] = True
@@ -390,22 +379,28 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
     output_dir = os.path.dirname(output_path) or "recordings"
 
     is_segmented = segment_mins > 0
-    seg_prefix = os.path.basename(output_path).replace(".mp4", "_part")
-    seg_pattern = os.path.join(output_dir, f"{seg_prefix}%03d.mp4")
+    seg_prefix = os.path.basename(output_path).replace(".mp4", "")
+    seg_pattern = os.path.join(output_dir, f"{seg_prefix} (Part %02d).mp4")
 
     # Mode 1: Jika URL berupa direct CDN Stream (.flv atau .m3u8)
     if "tiktokcdn.com" in url or ".flv" in url or (url.startswith("http") and ".m3u8" in url):
         headers_str = "Referer: https://www.tiktok.com/\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36\r\n"
+        
+        # Flags fragmented mp4 agar video bisa diputar di web browser saat proses rekaman masih berlangsung
+        mov_flags = "+frag_keyframe+empty_moov+default_base_moof"
+
         if is_segmented:
             seg_secs = segment_mins * 60
-            logger.info(f"✂️ Mode Segmen Aktif: Memotong rekaman tiap {segment_mins} menit ({seg_secs}s)")
+            logger.info(f"✂️ Mode Segmen Aktif: Memotong tiap {segment_mins} menit ({seg_secs}s) -> (Part 01, Part 02...)")
             cmd = [
                 "ffmpeg", "-y",
                 "-headers", headers_str,
                 "-i", url,
                 "-c", "copy",
+                "-movflags", mov_flags,
                 "-f", "segment",
                 "-segment_time", str(seg_secs),
+                "-segment_start_number", "1",
                 "-reset_timestamps", "1",
                 "-reconnect", "1",
                 "-reconnect_at_eof", "1",
@@ -419,6 +414,7 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
                 "-headers", headers_str,
                 "-i", url,
                 "-c", "copy",
+                "-movflags", mov_flags,
                 "-reconnect", "1",
                 "-reconnect_at_eof", "1",
                 "-reconnect_streamed", "1",
@@ -426,7 +422,7 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
                 output_path
             ]
     else:
-        # Mode 2: Streamlink untuk platform umum (Twitch, YouTube, Kick)
+        # Mode 2: Streamlink untuk platform umum
         extra_args = []
         if sessionid and (platform.lower() == "tiktok" or "tiktok.com" in url):
             extra_args.extend([
@@ -457,7 +453,6 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
             universal_newlines=True
         )
 
-        # Background uploader untuk part yang sudah selesai saat rekaman masih berlangsung
         uploaded_parts = set()
         def check_and_upload_completed_segments():
             if not is_segmented or not gdrive_cfg.get("enabled", False):
@@ -467,12 +462,11 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
                     f for f in os.listdir(output_dir)
                     if f.startswith(seg_prefix) and f.endswith(".mp4") and f not in uploaded_parts
                 ])
-                # Upload semua part kecuali yang paling terakhir (karena masih ditulis oleh ffmpeg)
                 if len(candidates) > 1:
                     for f in candidates[:-1]:
                         full_f = os.path.join(output_dir, f)
                         if os.path.exists(full_f) and os.path.getsize(full_f) > 5000:
-                            logger.info(f"📦 Part rekaman selesai terisi: {f}, mengunggah ke Cloud...")
+                            logger.info(f"📦 Part selesai: {f}, mengunggah ke Google Drive...")
                             uploaded_parts.add(f)
                             upload_to_gdrive(full_f, gdrive_cfg)
             except Exception as e:
@@ -505,7 +499,6 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
             else:
                 time.sleep(0.5)
 
-            # Cek berkala tiap 30 detik untuk upload part yang sudah selesai
             if time.time() - last_check_seg > 30:
                 last_check_seg = time.time()
                 check_and_upload_completed_segments()
@@ -518,9 +511,7 @@ def record_stream(url: str, output_path: str, platform: str, target: str, stop_e
         logger.info(f"⏹️ [{platform.upper()} - {target}] Rekaman selesai (Live berakhir).")
         ACTIVE_STATUS[status_key] = False
 
-        # Proses upload setelah selesai live
         if is_segmented:
-            # Upload sisa part yang belum terunggah (termasuk part terakhir)
             try:
                 remaining = sorted([
                     f for f in os.listdir(output_dir)
@@ -572,14 +563,19 @@ class TargetWatcher(threading.Thread):
 
         while not self.stop_event.is_set():
             try:
-                # Periksa kondisi penyimpanan VPS
                 check_storage_alert()
 
                 active, stream_url = is_live_active(self.url, self.platform, self.target, quality=self.quality)
                 if active:
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    # Format nama file rapi dengan Waktu Indonesia Barat (WIB)
+                    now_wib = datetime.now(WIB)
+                    timestamp_str = now_wib.strftime("%Y-%m-%d_%H.%M")
+                    
+                    plat_title = "TikTok" if self.platform.lower() == "tiktok" else (
+                        "Band" if self.platform.lower() == "band" else self.platform.capitalize()
+                    )
                     safe_target = sanitize_filename(self.target.lstrip("@"))
-                    filename = f"{self.platform}_{safe_target}_{timestamp}.mp4"
+                    filename = f"[{plat_title}] {safe_target} - {timestamp_str} WIB.mp4"
                     output_file = str(self.output_dir / filename)
 
                     record_stream(
